@@ -11,7 +11,12 @@ DEBUG = True
 
 # TODO IMPLEMENT DATABASE URL
 # Database URI
-SQLALCHEMY_DATABASE_URI = 'postgresql://postgres@localhost:5432/fyyur'
+DB_USER = os.getenv('DB_USER')
+DB_HOST = os.getenv('DB_HOST')
+DB_NAME = os.getenv('DB_NAME')
+
+SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}@{DB_HOST}/{DB_NAME}'
+
 
 # I used the material provided in this course to build my code
 # I used ChatGpt to understand some pieces
