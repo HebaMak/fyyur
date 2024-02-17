@@ -12,7 +12,7 @@ import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
-from models import Venue , Artist , Show
+from models import db, Venue , Artist , Show
 from flask_migrate import Migrate
 import sys
 
@@ -21,6 +21,7 @@ import sys
 #----------------------------------------------------------------------------#
 
 app = Flask(__name__)
+db.init_app(app)
 moment = Moment(app)
 
 # TODO: connect to a local postgresql database
@@ -210,7 +211,7 @@ def show_venue(venue_id):
     return jsonify({'message': 'Venue nit found'}), 404
   
   # get the past shows
-  past_shows_query = Show.query.filter(Show.venue_id == venue_id, Show.start_time < datetime.now()).all()
+  past_shows_query = db.session.query(Show).join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time<datetime.now()).all()
   past_shows = []
   for show in past_shows_query:
     past_show_data = {
@@ -224,7 +225,7 @@ def show_venue(venue_id):
   
   
   # get the upcoming shows
-  upcoming_shows_query = Show.query.filter(Show.venue_id == venue_id, Show.start_time >= datetime.now()).all()
+  upcoming_shows_query = db.session.query(Show).join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.now()).all()
   upcoming_shows=[]
   for show in upcoming_shows_query:
     upcoming_show_data = {
@@ -351,22 +352,27 @@ def create_venue_submission():
   
   try:
     form = VenueForm(request.form)
-    venue = Venue(
-      name= form.name.data,
-      city= form.city.data,
-      state=form.state.data,
-      address=form.address.data,
-      phone=form.phone.data,
-      genres=form.genres.data,
-      image_link=form.image_link.data,
-      facebook_link=form.facebook_link.data,
-      website_link=form.website_link.data,
-      seeking_talent=True if form.seeking_talent.data else False,
-      seeking_description=form.seeking_description.data
-    )
-    db.session.add(venue)
-    db.session.commit()
-    flash('Venue: {0} created successfully'.format(venue.name))
+    if form.validate_on_submit():
+      venue = Venue(
+        name= form.name.data,
+        city= form.city.data,
+        state=form.state.data,
+        address=form.address.data,
+        phone=form.phone.data,
+        genres=form.genres.data,
+        image_link=form.image_link.data,
+        facebook_link=form.facebook_link.data,
+        website_link=form.website_link.data,
+        seeking_talent=True if form.seeking_talent.data else False,
+        seeking_description=form.seeking_description.data
+      )
+      db.session.add(venue)
+      db.session.commit()
+      flash('Venue: {0} created successfully'.format(venue.name))
+    else:
+      for field, message in form.errors.items():
+        flash(field + ' _ ' + str(message), 'danger')
+    return render_template('forms/new_venue.html', form=form)
   except Exception as err:
     # TODO: on unsuccessful db insert, flash an error instead.
     flash('An error occurred creating the venue:{0}Error: {1}' .format(venue.name, err))
@@ -474,7 +480,7 @@ def show_artist(artist_id):
   artist = Artist.query.get(artist_id)
   
   # get past shows for the artist
-  past_shows_query = Show.query.filter(Show.artist_id == artist_id, Show.start_time < datetime.now()).all()
+  past_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time<datetime.now()).all()
   past_shows =[]
   for show in past_shows_query:
     venue = Venue.query.get(show.Venu_id)
@@ -489,7 +495,7 @@ def show_artist(artist_id):
   
   
   # get upcoming shows for the artist
-  upcoming_shows_query = Show.query.filter(Show.artist_id == artist_id, Show.start_time >= datetime.now()).all()
+  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time>datetime.now()).all()
   upcoming_shows = []
   for show in upcoming_shows_query:
     venue = Venue.query.get(show.Venu_id)
@@ -736,21 +742,26 @@ def create_artist_submission():
 
   try:
     form = ArtistForm(request.form)
-    artist = Artist(
-      name = form.name.data,
-      city = form.city.data,
-      state = form.state.data,
-      phone = form.phone.data,
-      genres = form.genres.data,
-      image_link = form.image_link.data,
-      facebook_link = form.facebook_link.data,
-      website_link = form.website_link.data,
-      seeking_venue = True if form.seeking_venue.data else False,
-      seeking_description = form.seeking_description.data
-    )
-    db.session.add(artist)
-    db.session.commit()
-    flash('Artist: {0} created successfully'.format(artist.name))
+    if form.validate_on_submit():
+      artist = Artist(
+        name = form.name.data,
+        city = form.city.data,
+        state = form.state.data,
+        phone = form.phone.data,
+        genres = form.genres.data,
+        image_link = form.image_link.data,
+        facebook_link = form.facebook_link.data,
+        website_link = form.website_link.data,
+        seeking_venue = True if form.seeking_venue.data else False,
+        seeking_description = form.seeking_description.data
+      )
+      db.session.add(artist)
+      db.session.commit()
+      flash('Artist: {0} created successfully'.format(artist.name))
+    else:
+      for field, message in form.errors.items():
+        flash(field + ' _ ' + str(message), 'danger')
+    return render_template('forms/new_venue.html', form=form)  
   except Exception as err:
     # TODO: on unsuccessful db insert, flash an error instead.
     flash('An error occurred creating the venue:{0}Error: {1}' .format(artist.name, err))
