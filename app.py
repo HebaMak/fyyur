@@ -21,23 +21,13 @@ import sys
 #----------------------------------------------------------------------------#
 
 app = Flask(__name__)
-db.init_app(app)
 moment = Moment(app)
 
 # TODO: connect to a local postgresql database
 # Connection to the Database fyyur, use the URI in config.py file 
 app.config.from_object('config')
-
-# we can also use this code to connect with the database
-# from config import SQLALCHEMY_DATABASE_URI
-# app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
-
-
 db = SQLAlchemy(app)
-
-# Disable modification tracking & stop unnecessary warnings
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+db.init_app(app)
 # Initialize Flask-Migrate for database migrations
 migrate = Migrate(app, db)
 
@@ -107,8 +97,8 @@ def venues():
     
     #Query venues based on the given location
     venue_query = Venue.query
-    filter_by_state = venue_query.filter_by(state=location.state)
-    filter_by_city = filter_by_state.filter_by(city=location.city)
+    filter_by_state = venue_query.filter_by(state=location['state'])
+    filter_by_city = filter_by_state.filter_by(city=location['city'])
     venues_locations = filter_by_city.all()
     
     for venue_location in venues_locations:
@@ -119,8 +109,8 @@ def venues():
       })
       
     data.append({
-      'city': location.city,
-      'state': location.state,
+      'city': location['city'],
+      'state': location['state'],
       'venues': venue_details
     })
   
@@ -171,7 +161,7 @@ def search_venues():
     
     # get the number of upcoming shows
     venue_shows = venue.shows
-    upcoming_shows = venue_shows.filter(Show.start_time > datetime.now()).all()
+    upcoming_shows = Show.query.filter(Show.venue_id == venue.id, Show.start_time>datetime.now()).all()
     num_upcoming_shows = len(upcoming_shows)
     
     venue_details = {}
@@ -350,8 +340,8 @@ def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   # insert data  as a new Venue record
   
+  form = form.validate()
   try:
-    form = VenueForm(request.form)
     if form.validate_on_submit():
       venue = Venue(
         name= form.name.data,
@@ -375,7 +365,7 @@ def create_venue_submission():
     return render_template('forms/new_venue.html', form=form)
   except Exception as err:
     # TODO: on unsuccessful db insert, flash an error instead.
-    flash('An error occurred creating the venue:{0}Error: {1}' .format(venue.name, err))
+    flash('An error occurred creating the venue:{0}Error: {1}' .format(form.name.data, err))
     db.session.rollback()
     print(sys.exc_info())
   finally:
@@ -449,7 +439,7 @@ def search_artists():
   artist = Artist.query.filter(Artist.name.ilike(f'%{search_term}%')).all()
   data = []
   for artist in artists:
-    artist_shows = Show.query.filter_by(artist.id==artist.id).all()
+    artist_shows = Show.query.filter(Show.artist_id==artist.id, Show.start_time>datetime.now()).all()
     artist_details = {
       'id': artist.id,
       'name': artist.name,
@@ -483,7 +473,7 @@ def show_artist(artist_id):
   past_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time<datetime.now()).all()
   past_shows =[]
   for show in past_shows_query:
-    venue = Venue.query.get(show.Venu_id)
+    venue = Venue.query.get(show.venue_id)
     show_details = {
       'venue_id': venue.id,
       'venue_name': venue.name,
@@ -498,7 +488,7 @@ def show_artist(artist_id):
   upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time>datetime.now()).all()
   upcoming_shows = []
   for show in upcoming_shows_query:
-    venue = Venue.query.get(show.Venu_id)
+    venue = Venue.query.get(show.venue_id)
     show_details = {
       'venue_id': venue.id,
       'venue_name': venue.name,
@@ -740,8 +730,8 @@ def create_artist_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
 
+  form = form.validate()
   try:
-    form = ArtistForm(request.form)
     if form.validate_on_submit():
       artist = Artist(
         name = form.name.data,
@@ -764,7 +754,7 @@ def create_artist_submission():
     return render_template('forms/new_venue.html', form=form)  
   except Exception as err:
     # TODO: on unsuccessful db insert, flash an error instead.
-    flash('An error occurred creating the venue:{0}Error: {1}' .format(artist.name, err))
+    flash('An error occurred creating the venue:{0}Error: {1}' .format(form.name.data, err))
     db.session.rollback()
     print(sys.exc_info())
   finally:

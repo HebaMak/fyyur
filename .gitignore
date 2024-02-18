@@ -6,9 +6,15 @@ node_modules/
 /.pnp
 .pnp.js
 .env
-
+.git
+.gitattributese
+migrations
+venv
+__pycache__
+.idea
+.vscode
 # testing
-/coverage
+/coverag.github
 
 # production
 /build

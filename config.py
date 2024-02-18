@@ -16,6 +16,7 @@ DB_HOST = os.getenv('DB_HOST')
 DB_NAME = os.getenv('DB_NAME')
 
 SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}@{DB_HOST}/{DB_NAME}'
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 # I used the material provided in this course to build my code

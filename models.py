@@ -19,7 +19,7 @@ class Venue(db.Model):
 
   # TODO: implement any missing fields, as a database migration using Flask-Migrate
   # missing records required for VenueForm & relational record
-  genres = db.Column(db.String(120))
+  genres = db.Column(db.ARRAY(db.String), nullable=False)
   website_link = db.Column(db.String(120))
   seeking_talent = db.Column(db.Boolean, default=False)
   seeking_description = db.Column(db.String(120))
@@ -37,7 +37,7 @@ class Artist(db.Model):
   city = db.Column(db.String(120))
   state = db.Column(db.String(120))
   phone = db.Column(db.String(120))
-  genres = db.Column(db.String(120))
+  genres = db.Column(db.ARRAY(db.String), nullable=False)
   image_link = db.Column(db.String(500))
   facebook_link = db.Column(db.String(120))
   
